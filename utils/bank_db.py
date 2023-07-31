@@ -8,17 +8,15 @@ from time import time
 class DatabaseManagerBank(object):
     """Класс описывающий методы взаимодействия с Базой данных"""
 
-    def __init__(self,  dbname: object = ".data/storage/banking_db.db") -> object:
-        self.dbname = dbname
-        self.conn = lite.connect(dbname, check_same_thread=False)
-        self.conn.execute("CREATE TABLE IF NOT EXISTS user(`id` INTEGER UNIQUE, `number` TEXT, `recipient` TEXT, 'card' TEXT)")
+    def __init__(self,  path): #-> object:
+        #self.dbname = dbname
+        self.conn = lite.connect(path, check_same_thread=False)
+        self.conn.execute("CREATE TABLE IF NOT EXISTS users(`id` INTEGER UNIQUE, `role` TEXT, `name` TEXT, 'phone' INT, 'balance' INT, 'comment' TEXT)")
         self.conn.commit()
 
     def new_user(self, id):
         try:
-            stmt = f'CREATE TABLE IF NOT EXISTS "{id}"(`number` INTEGER, `token` TEXT)'
-            self.conn.execute(stmt)
-            stmt = f'INSERT OR IGNORE INTO user(id) VALUES ({id})'
+            stmt = f'INSERT OR IGNORE INTO users(id) VALUES ({id})'
             self.conn.execute(stmt)
         except (lite.OperationalError, lite.ProgrammingError) as e:
             print("ERROR DATABASE new_user", e)
@@ -26,9 +24,57 @@ class DatabaseManagerBank(object):
         else:
             self.conn.commit()
 
+
+    def get_user(self, id):
+        try:
+            cur = self.conn.cursor()
+            stmt = f'SELECT * FROM users WHERE id = {id}'
+            cur.execute(stmt)
+            return cur.fetchall()[0]
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE new_user", e)
+            self.conn.close()
+            
+
+    def get_name_holders(self,t):
+        try:
+                cur = self.conn.cursor()
+                stmt = f'SELECT DISTINCT holder_name, user_id FROM wallets WHERE type = {t}'
+                cur.execute(stmt)
+                
+                return cur.fetchall()
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE new_user", e)
+            self.conn.close()
+
+
+    def get_fis_walets(self,t):
+        try:
+                cur = self.conn.cursor()
+                stmt = f'SELECT * FROM wallets WHERE type = {t}'
+                cur.execute(stmt)
+                
+                return cur.fetchall()
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE new_user", e)
+            self.conn.close()
+
+
+    def get_ip_holders(self):
+                try:
+                        cur = self.conn.cursor()
+                        stmt = f'SELECT * FROM users WHERE id = {id}'
+                        cur.execute(stmt)
+                        return cur.fetchall()[0]
+                except (lite.OperationalError, lite.ProgrammingError) as e:
+                    print("ERROR DATABASE new_user", e)
+                    self.conn.close()
+
+               
+
     def new_wallet(self, id, number, token):
         try:
-            stmt = f'INSERT INTO "{id}"(number, token)VALUES(?,?)'
+            stmt = f'SELECT * FROM users WHERE id = {id}'
             args = (number, token)
             self.conn.execute(stmt, args)
         except (lite.OperationalError, lite.ProgrammingError) as e:
@@ -44,8 +90,7 @@ class DatabaseManagerBank(object):
         except (lite.OperationalError, lite.ProgrammingError) as e:
             print("ERROR DATABASE new_user", e)
             self.conn.close()
-        else:
-            self.conn.commit()
+        
 
     """def get_number(self,id):
         stmt = f'SELECT number FROM user WHERE id = {id}'

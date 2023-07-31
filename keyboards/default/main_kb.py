@@ -1,9 +1,11 @@
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
-#from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from aiogram.filters import Command, Text
 from aiogram import F, types, Router
 
-router = Router()
+#router = Router()
+
+#markup_main = ReplyKeyboardMarkup(resize_keyboard=True).add(KeyboardButton(' Wallets '))
 
 
 def get_mainkb():
@@ -21,9 +23,31 @@ def get_mainkb():
     print(keyboard)
     return keyboard
 
-
-
 """
+
+def get_mainkb() -> ReplyKeyboardMarkup:
+    kb = ReplyKeyboardBuilder()
+    kb.button(text="Держатели")
+    kb.button(text="ПП")
+    kb.adjust(2)
+    
+    return kb.as_markup(resize_keyboard=True)
+
+def get_mainkb():
+    kb = [
+        [
+            types.KeyboardButton(text="Держатели"),
+            types.KeyboardButton(text="ПП")
+        ],
+    ]
+    keyboard = types.ReplyKeyboardMarkup(
+        keyboard=kb,
+        resize_keyboard=True
+        #input_field_placeholder="Добро пожаловать в банковскую систему"
+    )
+    print(keyboard)
+    return keyboard
+
 @router.message(Command("reply_builder"))
 async def reply_builder(message: types.Message):
     builder = ReplyKeyboardBuilder()

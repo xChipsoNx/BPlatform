@@ -11,14 +11,12 @@ class DatabaseManager(object):
     def __init__(self,  path): #-> object:
         #self.dbname = dbname
         self.conn = lite.connect(path, check_same_thread=False)
-        self.conn.execute("CREATE TABLE IF NOT EXISTS user(`id` INTEGER UNIQUE, `number` TEXT, `recipient` TEXT, 'card' TEXT)")
+        self.conn.execute("CREATE TABLE IF NOT EXISTS users(`id` INTEGER UNIQUE, `name` TEXT, `real_name` TEXT, 'phone' TEXT, 'role' TEXT)")
         self.conn.commit()
 
     def new_user(self, id):
         try:
-            stmt = f'CREATE TABLE IF NOT EXISTS "{id}"(`number` INTEGER, `token` TEXT)'
-            self.conn.execute(stmt)
-            stmt = f'INSERT OR IGNORE INTO user(id) VALUES ({id})'
+            stmt = f'INSERT OR IGNORE INTO users(id) VALUES ({id})'
             self.conn.execute(stmt)
         except (lite.OperationalError, lite.ProgrammingError) as e:
             print("ERROR DATABASE new_user", e)

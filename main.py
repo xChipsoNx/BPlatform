@@ -2,7 +2,7 @@ import loader
 import asyncio
 import logging
 from handlers.user import handlers
-from utils.db import bot_db, bank_db
+
 
 
 async def main():
