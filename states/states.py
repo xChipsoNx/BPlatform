@@ -64,10 +64,3 @@ async def food_size_chosen(message: Message, state: FSMContext):
     await state.clear()
 
 
-@router.message(OrderFood.choosing_food_size)
-async def food_size_chosen_incorrectly(message: Message):
-    await message.answer(
-        text="Я не знаю такого размера порции.\n\n"
-             "Пожалуйста, выберите один из вариантов из списка ниже:",
-        reply_markup=make_row_keyboard(available_food_sizes)
-    )

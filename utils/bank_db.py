@@ -38,39 +38,124 @@ class DatabaseManagerBank(object):
 
     def get_name_holders(self,t):
         try:
-                cur = self.conn.cursor()
-                stmt = f'SELECT DISTINCT holder_name, user_id FROM wallets WHERE type = {t}'
-                cur.execute(stmt)
-                
-                return cur.fetchall()
+            cur = self.conn.cursor()
+            stmt = f'SELECT DISTINCT holder_name, user_id FROM wallets WHERE type = {t}'
+            cur.execute(stmt)
+            
+            return cur.fetchall()
         except (lite.OperationalError, lite.ProgrammingError) as e:
-            print("ERROR DATABASE new_user", e)
+            print("ERROR DATABASE get name hold", e)
             self.conn.close()
 
 
-    def get_fis_walets(self,t):
+    def get_walets(self,id,t):
+        try:
+            cur = self.conn.cursor()
+            stmt = f'SELECT * FROM wallets WHERE type = {t} AND user_id= {id}'
+            cur.execute(stmt)
+            
+            return cur.fetchall()
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE get_walets", e)
+            self.conn.close()
+
+
+    def get_lk_wallet(self, id):
+        try:
+            cur = self.conn.cursor()
+            stmt = f'SELECT * FROM wallets WHERE id= {id}'
+            cur.execute(stmt) 
+            return cur.fetchall()[0]
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE get_lk_wallet", e)
+            self.conn.close()
+
+
+    def get_clients_list(self,):
+        try:
+            cur = self.conn.cursor()
+            stmt = f'SELECT name, id FROM clients'
+            cur.execute(stmt) 
+            return cur.fetchall()
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE get_clients_list", e)
+            self.conn.close()
+
+
+    def get_client_info(self, id):
+        try:
+            cur = self.conn.cursor()
+            stmt = f'SELECT * FROM clients WHERE id= {id}'
+            cur.execute(stmt) 
+            return cur.fetchall()
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE get_client_info", e)
+            self.conn.close()
+
+    def get_banks_list(self, t):
+        try:
+            cur = self.conn.cursor()
+            stmt = f'SELECT name, id FROM banks WHERE type= {t}'
+            cur.execute(stmt) 
+            return cur.fetchall()
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE get_banks_list", e)
+            self.conn.close()
+
+    
+    def get_full_pp_info(self, client_id, bank_id, holder_id):
+        try:
+            cur = self.conn.cursor()
+            stmt = f'SELECT * FROM clients WHERE id= {client_id}'
+            cur.execute(stmt) 
+            client = cur.fetchall()[0]
+        
+            stmt = f'SELECT bank, holder_name, id, balance FROM wallets WHERE bank_id= {bank_id} AND user_id= {holder_id}'
+            cur.execute(stmt) 
+            wallet = cur.fetchall()[0]
+
+            return list(client), list(wallet)
+
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE get_banks_list", e)
+            self.conn.close()
+
+
+    def add_new_order(self, o, sum_client, sum_holder):
+        try:
+            cur = self.conn.cursor()
+            stmt = f'''INSERT OR IGNORE INTO orders
+            (date, number, client_name, holder_name, bank_name,sum,tariff, add_tariff, tax, total, close_sum, close_date,client_id, holder_id, bank_id, wallet_id) 
+            VALUES ("{o[1]}", "{o[2]}", "{o[3]}", "{o[4]}", "{o[5]}", "{o[6]}", "{o[7]}", "{o[8]}", "{o[9]}", "{o[10]}", "{o[11]}", "{o[12]}", "{o[13]}", "{o[14]}", "{o[15]}", "{o[16]}" )'''
+            self.conn.execute(stmt )
+            
+            stmt2 = f"UPDATE clients SET balance = balance + {sum_client} WHERE id = {o[13]}"
+            cur.execute(stmt2)
+            stmt3 = f"UPDATE wallets SET balance = balance + {sum_holder} WHERE id = {o[16]}"
+            cur.execute(stmt3)
+
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE new_order", e)
+            self.conn.close()
+            return 0
+        else:
+            self.conn.commit()
+            return 1
+
+
+    def get_ip_holders(self,):
         try:
                 cur = self.conn.cursor()
-                stmt = f'SELECT * FROM wallets WHERE type = {t}'
+                stmt = f'SELECT * FROM users WHERE id = {id}'
                 cur.execute(stmt)
-                
-                return cur.fetchall()
+                return cur.fetchall()[0]
         except (lite.OperationalError, lite.ProgrammingError) as e:
             print("ERROR DATABASE new_user", e)
             self.conn.close()
 
 
-    def get_ip_holders(self):
-                try:
-                        cur = self.conn.cursor()
-                        stmt = f'SELECT * FROM users WHERE id = {id}'
-                        cur.execute(stmt)
-                        return cur.fetchall()[0]
-                except (lite.OperationalError, lite.ProgrammingError) as e:
-                    print("ERROR DATABASE new_user", e)
-                    self.conn.close()
 
-               
+
 
     def new_wallet(self, id, number, token):
         try:
