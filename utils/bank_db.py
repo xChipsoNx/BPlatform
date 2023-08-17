@@ -2,11 +2,12 @@
 import sqlite3 as lite
 
 from random import randint
-from time import time
+import datetime
 
 
 class DatabaseManagerBank(object):
     """Класс описывающий методы взаимодействия с Базой данных"""
+    
 
     def __init__(self,  path): #-> object:
         #self.dbname = dbname
@@ -121,19 +122,34 @@ class DatabaseManagerBank(object):
             self.conn.close()
 
 
-    def add_new_order(self, o, sum_client, sum_holder):
+    def add_new_order(self, o, sum_client, sum_holder, type):
         try:
+            date = datetime.date.today()
+            date_string = date.strftime("%d.%m.%y")
             cur = self.conn.cursor()
             stmt = f'''INSERT OR IGNORE INTO orders
             (date, number, client_name, holder_name, bank_name,sum,tariff, add_tariff, tax, total, close_sum, close_date,client_id, holder_id, bank_id, wallet_id) 
             VALUES ("{o[1]}", "{o[2]}", "{o[3]}", "{o[4]}", "{o[5]}", "{o[6]}", "{o[7]}", "{o[8]}", "{o[9]}", "{o[10]}", "{o[11]}", "{o[12]}", "{o[13]}", "{o[14]}", "{o[15]}", "{o[16]}" )'''
             self.conn.execute(stmt )
-            
-            stmt2 = f"UPDATE clients SET balance = balance + {sum_client} WHERE id = {o[13]}"
-            cur.execute(stmt2)
+            if type == "order":
+                stmt2 = f"UPDATE clients SET balance = balance - {sum_client} WHERE id = {o[13]}"
+                cur.execute(stmt2)
+                stmt5 = f"UPDATE wallets SET share = share - {o[9]} WHERE id = {o[16]}"
+                cur.execute(stmt5)
+                stmt6 = f'INSERT INTO transactions(date, type, sender, sum_out, sum_in, recipient ) VALUES ("{date_string}", "share", "{o[2]}", 0, "{o[9]}","{o[14]}")'
+                self.conn.execute(stmt6)
+            elif type == "transit":
+                stmt2 = f"UPDATE wallets SET balance = balance - {sum_client} WHERE id = {o[13]}"
+                cur.execute(stmt2)
+
             stmt3 = f"UPDATE wallets SET balance = balance + {sum_holder} WHERE id = {o[16]}"
             cur.execute(stmt3)
+            stmt4 = f'INSERT INTO transactions(date, type, sender, sum_out, sum_in, recipient ) VALUES ("{date_string}", "{type}", "{o[13]}", "{sum_client}", "{sum_holder}","{o[16]}")'
+            self.conn.execute(stmt4)
 
+            
+            #stmt6 = f"UPDATE wallets SET balance = balance + {sum_holder - sum_client} WHERE id = {o[16]}"
+            #cur.execute(stmt6)
         except (lite.OperationalError, lite.ProgrammingError) as e:
             print("ERROR DATABASE new_order", e)
             self.conn.close()
@@ -141,6 +157,52 @@ class DatabaseManagerBank(object):
         else:
             self.conn.commit()
             return 1
+
+
+    def add_new_transfer(self, from_id, to_id, sum):
+        try:
+            date = datetime.date.today()
+            date_string = date.strftime("%d.%m.%y")
+            cur = self.conn.cursor()
+            stmt2 = f"UPDATE wallets SET balance = balance - {sum} WHERE id = {from_id}"
+            cur.execute(stmt2)
+            stmt3 = f"UPDATE wallets SET balance = balance + {sum} WHERE id = {to_id}"
+            cur.execute(stmt3)
+            stmt4 = f'INSERT INTO transactions(date, type, sender, sum_out, sum_in, recipient) VALUES ("{date_string}", "transfer", "{from_id}", "{sum}", "{sum}","{to_id}")'
+            self.conn.execute(stmt4)
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE add_transfer", e)
+            self.conn.close()
+        else:
+            self.conn.commit()
+
+
+    def add_new_cash_task(self, date, type, holder_name, bank_name, sum, wallet_id, bank_id):
+        try:
+            stmt4 = f'INSERT INTO withdrawings (date, type, holder_name, bank_name, sum, wallet_id, bank_id) VALUES ("{date}", "{type}", "{holder_name}", "{bank_name}", "{sum}","{wallet_id}", "{bank_id}")'
+            self.conn.execute(stmt4)
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE add_transfer", e)
+            self.conn.close()
+        else:
+            self.conn.commit()
+
+
+
+    def add_new_pushchases(self, sum, id):
+        try:
+            date = datetime.date.today()
+            date_string = date.strftime("%d.%m.%y")
+            cur = self.conn.cursor()
+            stmt2 = f"UPDATE wallets SET balance = balance - {sum} WHERE id = {id}"
+            cur.execute(stmt2)
+            stmt4 = f'INSERT INTO pushchases (date, wallet_id, sum) VALUES ("{date_string}", "{id}", "{sum}")'
+            self.conn.execute(stmt4)
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE add_transfer", e)
+            self.conn.close()
+        else:
+            self.conn.commit()
 
 
     def get_ip_holders(self,):
@@ -187,7 +249,7 @@ class DatabaseManagerBank(object):
         stmt = f'SELECT token FROM "{id}" WHERE number = {number}'
         cur = self.conn.cursor()
         cur.execute(stmt)
-        return cur.fetchone()[0]"""
+        return cur.fetchone()[0]
 
     def get_wallet(self,id):
         cur = self.conn.cursor()
@@ -207,7 +269,7 @@ class DatabaseManagerBank(object):
         cur = self.conn.cursor()
         cur.execute(f'SELECT card FROM user WHERE id = {id}')
         return cur.fetchone()[0]
-"""
+
 class DatabaseManager(object):
 
     def __init__(self, path):
