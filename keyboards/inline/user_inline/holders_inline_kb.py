@@ -1,7 +1,7 @@
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram import F, types
 from aiogram.types import Message 
-
+import datetime
 
 def holders_inline(data, tp):
     builder = InlineKeyboardBuilder()
@@ -40,26 +40,104 @@ def wallets_holder_inline(data,tp):
     return builder.as_markup()
 
 
-def choose_lk_action(tp):
+def choose_lk_action(tp, id):
     if tp == 'FIS':
         buttons = [
             [
-                types.InlineKeyboardButton(text="Перевод", callback_data=f"lk_FIS_remittance"),
-                types.InlineKeyboardButton(text="Снятие", callback_data=f"lk_FIS_cash")
+                types.InlineKeyboardButton(text="Перевод", callback_data=f"lk_FIS_transfer_{id}"),
+                types.InlineKeyboardButton(text="Снятие", callback_data=f"lk_FIS_cash_{id}")
             ]            
         ]
     elif tp == 'IP':
         buttons = [
             [
-                types.InlineKeyboardButton(text="Перевод", callback_data=f"lk_IP_remittance"),
-                types.InlineKeyboardButton(text="Снятие", callback_data=f"lk_IP_cash")
+                types.InlineKeyboardButton(text="Перевод себе", callback_data=f"lk_IP_transfer_{id}"),
+                types.InlineKeyboardButton(text="Снятие", callback_data=f"lk_IP_cash_{id}")
             ],
             [ 
-                types.InlineKeyboardButton(text="Счёт", callback_data=f"lk_IP_check"),
-                types.InlineKeyboardButton(text="Покупки", callback_data=f"lk_IP_purchases")
+                types.InlineKeyboardButton(text="Транзит", callback_data=f"lk_IP_transit_{id}"),
+                types.InlineKeyboardButton(text="Покупки", callback_data=f"lk_IP_purchases_{id}"),
+                types.InlineKeyboardButton(text="Счет", callback_data=f"lk_IP_check_{id}")
             ]
         ]
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
     return keyboard
 
 
+def lk_confirmation_transfer():
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text="Отмена", callback_data=f"lk_transfer_cancel"),
+                (types.InlineKeyboardButton(text="Подтвердить", callback_data=f"lk_transfer_confirmation")))
+    return builder.as_markup()
+
+
+def back_to_wallet(data):
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text="Нет", callback_data=f"lk_transfer_cancel"),
+                (types.InlineKeyboardButton(text="Подтвердить", callback_data=data)))
+    return builder.as_markup()
+
+
+
+def cash_choose_date():
+    builder = InlineKeyboardBuilder()
+    #d = 0
+    for d in range(7):
+        date = datetime.date.today() + datetime.timedelta(d)
+        date_string = date.strftime("%d.%m.%y")
+        call = f"lk_cash_date_{date_string}"
+        
+        print(call)
+        builder.row(types.InlineKeyboardButton(
+            text=str(date_string),
+            callback_data=call,
+            resize_keyboard=True)
+            
+        )
+         
+    return builder.as_markup()
+
+def lk_confirmation_cash():
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text="Отмена", callback_data=f"lk_cash_cancel"),
+                (types.InlineKeyboardButton(text="Подтвердить", callback_data=f"lk_cash_confirmation")))
+    return builder.as_markup()
+
+
+def lk_confirmation_pushcheses():
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text="Отмена", callback_data=f"lk_pushchases_cancel"),
+                (types.InlineKeyboardButton(text="Подтвердить", callback_data=f"lk_pushchases_confirmation")))
+    return builder.as_markup()
+
+
+def choose_transit_tariff():
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text=f"Изменить", callback_data=f"lk_transit_tariff_yes"), types.InlineKeyboardButton(text=f"Оставить 1%", callback_data=f"lk_transit_tariff_no"))
+    #builder.row(types.InlineKeyboardButton(text=f"Оставить 1%", callback_data=f"PP_tariff_no"))
+    return builder.as_markup()
+
+
+def choose_transit_add_tariff():
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text=f"Изменить", callback_data=f"lk_transit_addtariff_yes"), types.InlineKeyboardButton(text=f"Оставить 1%", callback_data=f"lk_transit_addtariff_no"))
+    #builder.row(types.InlineKeyboardButton(text=f"Оставить 1%", callback_data=f"PP_addtariff_no"))
+    return builder.as_markup()
+
+
+def lk_transit_order_confirm():
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text=f"Отмена", callback_data=f"lk_transit_confirm_exit"), types.InlineKeyboardButton(text=f"Подтвердить", callback_data=f"lk_transit_confirm_yes"))
+    return builder.as_markup()
+
+
+def lk_check_clients(clients):
+    builder = InlineKeyboardBuilder()
+    for name in clients:
+        call = f"lk_check_client_{name[1]}"
+        builder.row(types.InlineKeyboardButton(
+            text=f"{name[0]}",
+            callback_data=f"{call}")
+        )
+        print(call)
+    return builder.as_markup()

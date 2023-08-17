@@ -17,7 +17,7 @@ class User():
     
 
 class Wallet():
-    def __init__(self, id, type, bank, holder_name, tariff, balance, bank_id, user_id):
+    def __init__(self, id, type, bank, holder_name, tariff, balance, bank_id, user_id,share):
         self.id = id
         self.type = type
         self.bank = bank
@@ -26,6 +26,7 @@ class Wallet():
         self.balance = balance
         self.bank_id = bank_id
         self.user_id = user_id
+        self.share = share
 
     def get_list(self):
         return [self.id, self.type, self.bank ,self.holder_name, self.tariff, self.balance, self.bank_id, self.user_id]

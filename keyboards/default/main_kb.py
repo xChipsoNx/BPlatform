@@ -8,21 +8,33 @@ from aiogram import F, types, Router
 #markup_main = ReplyKeyboardMarkup(resize_keyboard=True).add(KeyboardButton(' Wallets '))
 
 
-def get_mainkb():
+
+async def start_menu(msg):
     kb = [
         [
-            types.KeyboardButton(text="Держатели"),
-            types.KeyboardButton(text="ПП")
+            types.KeyboardButton(text="ФИЗ"),
+            types.KeyboardButton(text="ИП")
         ],
+        [
+            types.KeyboardButton(text="ПП"),
+            types.KeyboardButton(text="Снятия")
+        ]
     ]
     keyboard = types.ReplyKeyboardMarkup(
         keyboard=kb,
-        resize_keyboard=True
-        #input_field_placeholder="Добро пожаловать в банковскую систему"
+        resize_keyboard=True,
+        input_field_placeholder="Выберите пункт меню"
     )
-    print(keyboard)
-    return keyboard
+    await msg.answer("Это главное меню бота.",reply_markup=keyboard)
 
+
+
+async def cancel_kb(msg, state):
+    await state.clear()
+    await msg.answer(
+        text="Действие отменено",
+        reply_markup=ReplyKeyboardRemove()
+    )
 """
 
 def get_mainkb() -> ReplyKeyboardMarkup:

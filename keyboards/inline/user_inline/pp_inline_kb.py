@@ -16,7 +16,7 @@ def get_pp_kb():
 
 def newPP_choose_date():
     builder = InlineKeyboardBuilder()
-    d = 0
+    #d = 0
     for d in range(7):
         date = datetime.date.today() - datetime.timedelta(d)
         date_string = date.strftime("%d.%m.%y")
@@ -103,4 +103,10 @@ def choose_add_tariff():
     builder = InlineKeyboardBuilder()
     builder.row(types.InlineKeyboardButton(text=f"Изменить", callback_data=f"PP_addtariff_yes"), types.InlineKeyboardButton(text=f"Оставить 1%", callback_data=f"PP_addtariff_no"))
     #builder.row(types.InlineKeyboardButton(text=f"Оставить 1%", callback_data=f"PP_addtariff_no"))
+    return builder.as_markup()
+
+
+def choose_next_new_order():
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text=f"Завершить", callback_data=f"pp_exit"), types.InlineKeyboardButton(text=f"Добавить еще ПП", callback_data=f"pp_new"))
     return builder.as_markup()

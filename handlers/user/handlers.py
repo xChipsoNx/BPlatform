@@ -8,45 +8,33 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from loader import db_bank
 from utils.user_cls import User
 from keyboards.inline.user_inline import holders_inline_kb, pp_inline_kb
+from keyboards.default import main_kb
+
 
 
 router = Router()  # [1]
 
+
+
 @router.message(Command("start"))
 async def start_handler(msg: Message, state:FSMContext):
-    kb = [
-        [
-            types.KeyboardButton(text="ФИЗ"),
-            types.KeyboardButton(text="ИП")
-        ],
-        [
-            types.KeyboardButton(text="ПП")
-        ]
-    ]
-    keyboard = types.ReplyKeyboardMarkup(
-        keyboard=kb,
-        resize_keyboard=True,
-        input_field_placeholder="Выберите пункт меню"
-    )
+   
+    await main_kb.start_menu(msg)
     db_bank.new_user(msg.from_user.id)
     await state.clear()
     
-    await msg.answer("Привет! Я банк платформа",reply_markup=keyboard)
+    #await msg.answer("Привет! Я банк платформа",reply_markup=keyboard)
 
 
 @router.message(Command(commands=["cancel"]))
 @router.message(Text(text="отмена", ignore_case=True))
 async def cmd_cancel(message: Message, state: FSMContext):
-    await state.clear()
-    await message.answer(
-        text="Действие отменено",
-        reply_markup=ReplyKeyboardRemove()
-    )
+    await main_kb.cancel_kb(message, state)
 
 
 @router.message(Text("ФИЗ"))
 async def fis_holders(message: Message):
-    data = db_bank.get_name_holders("'ФИЗ'")
+    data = db_bank.get_name_holders("'FIS'")
     await message.answer(
         "Выберите держателя физ из списка:", reply_markup=holders_inline_kb.holders_inline(data,'FIS')       
     )
@@ -54,7 +42,7 @@ async def fis_holders(message: Message):
 
 @router.message(Text("ИП"))
 async def ip_holders(message: Message):
-    data = db_bank.get_name_holders("'ИП'")
+    data = db_bank.get_name_holders("'IP'")
     await message.answer(
         "Выберите держателя ИП из списка", reply_markup=holders_inline_kb.holders_inline(data,'IP')      
     )
@@ -66,6 +54,15 @@ async def orders(message: Message):
     await message.answer(
         "Выберите действие с ПП: ",reply_markup=pp_inline_kb.get_pp_kb()       
     )
+
+
+@router.message(Text("Снятия"))
+async def orders(message: Message):
+
+    await message.answer(
+        "Выберите действие: ",reply_markup=pp_inline_kb.get_pp_kb()       
+    )
+
 
 @router.message(Command("get_user"))
 async def get_user(msg: Message):

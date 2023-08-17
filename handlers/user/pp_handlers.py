@@ -39,16 +39,18 @@ def write_new_order(pp):
     c_date = date + datetime.timedelta(client[3])
     close_date = c_date.strftime('%d.%m.%y')
     
-    client_sum = sum - sum*float(client[2])#client[4]+sum - sum*float(client[2])
-    holder_sum = total #wallet[3]+total
+    client_sum = sum - sum*float(client[2])
+    holder_sum = total 
     
     order = PP(None,pp['pp_date'], pp['pp_number'], client[1],wallet[1],wallet[0], sum, tariff, add_tariff, tax, total, 0, close_date, client[0],pp['pp_holder'],pp['pp_bank'], wallet[2])
     
-    ans = db_bank.add_new_order(order.get_list(), client_sum,holder_sum)
+    ans = db_bank.add_new_order(order.get_list(), client_sum,holder_sum,"order")
     if ans == 1:
         return order, client_sum, holder_sum
     else:
         return "Error", 0, 0
+
+
 
 @router.callback_query(Text(startswith="pp_"))
 async def choose_pp_actions(callback: types.CallbackQuery, state: FSMContext):
@@ -58,9 +60,13 @@ async def choose_pp_actions(callback: types.CallbackQuery, state: FSMContext):
         pass
     elif action[1] == 'new':
         await callback.message.answer(
-            f"Введидите дату ПП или выберите:", reply_markup=pp_inline_kb.newPP_choose_date() 
+            f"Введите дату ПП или выберите:", reply_markup=pp_inline_kb.newPP_choose_date() 
         )
         await state.set_state(PPWork.new_pp_date)
+    elif action[1] == 'exit':
+        await callback.message.answer(
+            f"Отмена ввода нового ПП. Выберите следущее действие:", reply_markup=pp_inline_kb.get_pp_kb()   
+        )
     
 
 @router.message(PPWork.new_pp_date)
@@ -110,7 +116,7 @@ async def pp_new_choosen_client(callback: types.CallbackQuery, state: FSMContext
     tx = await state.get_data()
     print(tx)
     await callback.message.answer(
-        text="Теперь, пожалуйста, выберите банк:", reply_markup=pp_inline_kb.get_pp_banks(db_bank.get_banks_list("'ИП'"))
+        text="Теперь, пожалуйста, выберите банк:", reply_markup=pp_inline_kb.get_pp_banks(db_bank.get_banks_list("'IP'"))
     )
     await state.set_state(PPWork.choose_bank)
 
@@ -124,7 +130,7 @@ async def pp_new_choosen_bank(callback: types.CallbackQuery, state: FSMContext):
     tx = await state.get_data()
     print(tx)
     await callback.message.answer(
-        text="Теперь, пожалуйста, выберите держателя:",  reply_markup=pp_inline_kb.get_pp_holders(db_bank.get_name_holders("'ИП'"))
+        text="Теперь, пожалуйста, выберите держателя:",  reply_markup=pp_inline_kb.get_pp_holders(db_bank.get_name_holders("'IP'"))
     )
     await state.set_state(PPWork.choose_holder)
 
@@ -195,14 +201,16 @@ async def pp_new_choose_add_tariff(callback: types.CallbackQuery, state: FSMCont
 
         if order == "Error":
             await callback.message.answer(
-                text=f"Ошибка записи!"
+                text=f"Ошибка записи! Попробовать еще раз?", reply_markup=pp_inline_kb.choose_next_new_order()
             )
-            state.clear()
+            await state.clear()
         
         else:
             await callback.message.answer(
-                text=f"Запись прошла успешно!\n"
+                text=f"Запись прошла успешно!\nЖелаете добавить еще ПП?", reply_markup=pp_inline_kb.choose_next_new_order()
+        
             )
+            await state.clear()
 
     elif callback.data.split("_")[2] == "yes":
         await callback.message.answer(text="Теперь, пожалуйста, введите дополнительный процент, в формате 1 = 1% :"
@@ -221,12 +229,13 @@ async def pp_new_enter_add_tariff(message: Message, state: FSMContext):
 
     if order == "Error":
         await message.answer(
-            text=f"Ошибка записи!"
+            text=f"Ошибка записи! Попробовать еще раз?", reply_markup=pp_inline_kb.choose_next_new_order()
         )
-        state.clear()
+        await state.clear()
     
     else:
         await message.answer(
-            text=f"Запись прошла успешно!\n"
+            text=f"Запись прошла успешно!\nЖелаете добавить еще ПП?", reply_markup=pp_inline_kb.choose_next_new_order()
         )
+        await state.clear()
     
