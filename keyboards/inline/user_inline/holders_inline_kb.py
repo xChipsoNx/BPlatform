@@ -44,7 +44,8 @@ def choose_lk_action(tp, id):
     if tp == 'FIS':
         buttons = [
             [
-                types.InlineKeyboardButton(text="Перевод", callback_data=f"lk_FIS_transfer_{id}"),
+                types.InlineKeyboardButton(text="Перевод", callback_data=f"lk_FIS_transferfis_{id}"),
+                types.InlineKeyboardButton(text="Вывод", callback_data=f"lk_FIS_paymentfis_{id}"),
                 types.InlineKeyboardButton(text="Снятие", callback_data=f"lk_FIS_cash_{id}")
             ]            
         ]
@@ -140,4 +141,94 @@ def lk_check_clients(clients):
             callback_data=f"{call}")
         )
         print(call)
+    return builder.as_markup()
+
+
+def lk_check_confirm():
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text=f"Отмена", callback_data=f"lk_check_confirm_exit"), types.InlineKeyboardButton(text=f"Подтвердить", callback_data=f"lk_check_confirm_yes"))
+    return builder.as_markup()
+
+
+def choose_sbp_transferfis():
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text=f"Нет, внутрибанковский", callback_data=f"lk_transferfis_nosbp"), types.InlineKeyboardButton(text=f"Да, по СБП", callback_data=f"lk_transferfis_yessbp"))
+    return builder.as_markup()
+
+
+def choose_sbp_paymentfis():
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text=f"Нет, внутрибанковский", callback_data=f"lk_paymentfis_nosbp"), types.InlineKeyboardButton(text=f"Да, по СБП", callback_data=f"lk_paymentfis_yessbp"))
+    return builder.as_markup()
+
+
+def get_bank_list_kb(data):
+
+    builder = InlineKeyboardBuilder()
+    for bank in data:
+        call = f"lk_transferfis_bank_{bank[1]}"
+        
+        print(call)
+        builder.row(types.InlineKeyboardButton(
+            text=f"{bank[0]}",
+            callback_data=f"{call}",
+            resize_keyboard=True)
+            
+        )
+        
+    return builder.as_markup()
+
+
+def lk_transferfis_confirm():
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text=f"Отмена", callback_data=f"lk_transferfis_confirm_exit"), types.InlineKeyboardButton(text=f"Подтвердить", callback_data=f"lk_transferfis_confirm_yes"))
+    return builder.as_markup()
+
+
+"""def get_wallets_from_bank(data):
+    builder = InlineKeyboardBuilder()
+    for wallet in data:
+        call = f"wallet_FIS_{wallet[0]}"
+        print(call)
+        builder.row(types.InlineKeyboardButton(
+            text=f"{wallet[2]} / {wallet[5]} руб",
+            callback_data=f"{call}",
+            resize_keyboard=True)
+            
+        )
+        print(wallet[2])
+        
+    return builder.as_markup()"""
+
+
+def wallets_holder_for_transferfis(data, err):
+    builder = InlineKeyboardBuilder()
+    for wallet in data:
+        if str(wallet[0]) != err:
+            call = f"twallet_FIS_{wallet[0]}"
+            print(call, err)
+            builder.row(types.InlineKeyboardButton(
+                text=f"{wallet[2]} {wallet[3]} == {wallet[5]} руб",
+                callback_data=f"{call}",
+                resize_keyboard=True)
+                
+            )
+            print(wallet[2])
+        
+    return builder.as_markup()
+
+
+def lk_payments_client(data):
+    builder = InlineKeyboardBuilder()
+    for client in data:
+        print(client)
+        call = f"pclient_{client[1]}_{client[0]}"
+        builder.row(types.InlineKeyboardButton(
+            text=f"{client[0]}",
+            callback_data=f"{call}",
+            resize_keyboard=True)
+            
+        )
+        print(client[1])
+        
     return builder.as_markup()

@@ -22,7 +22,7 @@ class LKstates(StatesGroup):
 
     lk_check = State()
     lk_check_sum = State()
-    lk_confirm = State()
+    lk_check_confirm = State()
 
     lk_pushchases = State()
     lk_pushchases_sum = State()
@@ -39,6 +39,18 @@ class LKstates(StatesGroup):
     lk_transit_add_tariff = State()
     lk_transit_result = State()
     lk_transit_confirm = State()
+
+    lk_transferfis_sbp = State()
+    lk_transferfis_holder = State()
+    lk_transferfis_bank = State()
+    lk_transferfis_sum = State()
+    lk_transferfis_confirm = State()
+
+    lk_paymentfis_sbp = State()
+    lk_paymentfis_client = State()
+    lk_paymentfis_sum = State()
+    lk_paymentfis_confirm = State()
+
      
     
 
@@ -55,7 +67,7 @@ async def look_wallet(callback, state, data):
     
     lk = Wallet(*db_bank.get_lk_wallet(wal_id)) 
     
-    await state.update_data(lk_wal_bank=lk.bank)
+    await state.update_data(lk_wal_bank=lk.bank,lk_wal_bank_id = lk.bank_id)
 
     await callback.message.answer(
         f"{lk.holder_name} {lk.bank}\nБалланс: {lk.balance}\nВыберите действие с кошелеком держателя из списка:", reply_markup=kb     
@@ -78,10 +90,26 @@ async def lk_actions(callback: types.CallbackQuery, state: FSMContext):
 
     if action[1] == 'FIS':
         await state.update_data(lk_type=action[1])
-        if action[2] == "transfer":
-            print('pjkupka')
+        if action[2] == "transferfis":
+            await callback.message.answer(
+                f"Перевод по СБП?",
+                reply_markup=holders_inline_kb.choose_sbp_transferfis()
+            )
+            await state.set_state(LKstates.lk_transferfis_sbp)
+        elif action[2] == "paymentfis":
+            await callback.message.answer(
+                f"Выплата по СБП?",
+                reply_markup=holders_inline_kb.choose_sbp_paymentfis()
+            )
+            await state.set_state(LKstates.lk_paymentfis_sbp)
         elif action[2] == "cash":
-            pass
+            await callback.message.answer(
+                f"Выберите дату снятия:",
+                reply_markup=holders_inline_kb.cash_choose_date()
+            )
+            print(tx)
+            await state.set_state(LKstates.lk_cash)
+
         
     if action[1] == 'IP':
         await state.update_data(lk_type=action[1])
@@ -125,6 +153,182 @@ async def lk_actions(callback: types.CallbackQuery, state: FSMContext):
             await state.set_state(LKstates.lk_transit)
 
 
+@router.callback_query(LKstates.lk_transferfis_sbp, Text(startswith="lk_transferfis_"))
+async def lk_transferfis_sbp(callback: types.CallbackQuery, state: FSMContext):
+    print(callback.data.split("_")[2])
+    tx = await state.get_data()
+    print(tx)
+    if callback.data.split("_")[2] == "nosbp":
+        await state.update_data(lk_transferfis_sbp='nosbp')
+        data = db_bank.get_wallets_from_bank(tx['lk_wal_bank_id'])
+        print(data)
+        await callback.message.answer(
+            text="Выбран внутрибанковский перевод. Выберите держателя:",
+            reply_markup=holders_inline_kb.wallets_holder_for_transferfis(data,tx['lk_wal_id'])
+        )
+
+        await state.set_state(LKstates.lk_transferfis_holder)
+    
+    elif callback.data.split("_")[2] == "yessbp":
+        await state.update_data(lk_transferfis_sbp='sbp')
+        data = db_bank.get_banks_list("'FIS'")
+        await callback.message.answer(
+            text="Выбран перевод по СБП. Выберите банк:",
+            reply_markup=holders_inline_kb.get_bank_list_kb(data)
+        )
+        await state.set_state(LKstates.lk_transferfis_bank)
+
+
+@router.callback_query(LKstates.lk_transferfis_bank, Text(startswith="lk_transferfis_bank_"))
+async def lk_transferfis_bank(callback: types.CallbackQuery, state: FSMContext):
+    bank_id = callback.data.split("_")[3]
+    #await state.update_data(lk_transferfis_bank_id=callback.data.split("_")[3])
+    data = db_bank.get_wallets_from_bank(bank_id)
+    await callback.message.answer(
+        text="Выбран банк для перевода по СБП. Выберите держателя:",
+        reply_markup=holders_inline_kb.wallets_holder_for_transferfis(data,bank_id)
+    )
+    await state.set_state(LKstates.lk_transferfis_holder)
+
+
+@router.callback_query(LKstates.lk_transferfis_holder, Text(startswith="twallet_FIS_"))
+async def lk_tranferfis_holder(callback: types.CallbackQuery, state: FSMContext):
+    print(callback.data.split("_")[2])
+    await state.update_data(lk_transferfis_wal_id=callback.data.split("_")[2])
+    await callback.message.answer(
+        text="Выбран держатель для перевода по СБП. Введите сумму:"
+    )
+    await state.set_state(LKstates.lk_transferfis_sum)
+
+
+@router.message(LKstates.lk_transferfis_sum)
+async def lk_transferfis_sum(message: Message, state: FSMContext):
+    await state.update_data(lk_transferfis_sum=message.text.lower())
+    print(message.text.format())
+    tx = await state.get_data()
+    lk = Wallet(*db_bank.get_lk_wallet(tx['lk_wal_id'])) 
+    transfer_lk = Wallet(*db_bank.get_lk_wallet(tx['lk_transferfis_wal_id']) )
+
+    print(tx)
+    if tx['lk_transferfis_sbp'] == 'nosbp':
+        #await state.update_data(lk_transferfis_bank_id=lk.bank_id)
+        await message.answer(
+            f"{tx['lk_from_holder_name']}\nВнутренний перевод {lk.bank} держателю {transfer_lk.holder_name} на сумму: {tx['lk_transferfis_sum']}.\nВы подтверждаете перевод?",
+            reply_markup=holders_inline_kb.lk_transferfis_confirm()
+        )
+    elif tx['lk_transferfis_sbp'] == 'sbp':
+        await message.answer(
+            f"{tx['lk_from_holder_name']}\nПеревод по СБП в {transfer_lk.bank} держателю {transfer_lk.holder_name} на сумму: {tx['lk_transferfis_sum']}.\nВы подтверждаете перевод?",
+            reply_markup=holders_inline_kb.lk_transferfis_confirm()
+        )
+    await state.update_data(lk_transferfis_wal_id=transfer_lk.id)
+    await state.set_state(LKstates.lk_transferfis_confirm)
+
+
+@router.callback_query(LKstates.lk_transferfis_confirm, Text(startswith="lk_transferfis_confirm_"))
+async def lk_transferfis_result(callback: types.CallbackQuery,  state: FSMContext):
+    action = callback.data.split("_")
+    acc = action[3]
+    tx = await state.get_data()
+    holder = tx['lk_holder_id']
+    name = tx['lk_from_holder_name']
+
+    if acc == "yes":
+        tranfer_type = f"transfer_{tx['lk_transferfis_sbp']}"
+        db_bank.add_new_transfer(tx['lk_wal_id'], tx['lk_transferfis_wal_id'], tx['lk_transferfis_sum'], tranfer_type)
+        await callback.message.answer(
+            f"Перевод исполнен успешно! Возврат в кошелек."
+        )  
+    elif acc == "exit":
+        await callback.message.answer(
+            f"Перевод отменен! Возврат в кошелек."
+        )
+    await state.clear()
+    await state.set_state(LKstates.lk_choose_wallet)
+    await state.update_data(lk_holder_id=holder)
+    await state.update_data(lk_from_holder_name=name)
+    await look_wallet(callback, state, f"wallet_FIS_{tx['lk_wal_id']}")
+
+
+@router.callback_query(LKstates.lk_paymentfis_sbp, Text(startswith="lk_paymentfis_"))
+async def lk_paymentfis_sbp(callback: types.CallbackQuery, state: FSMContext):
+    print(callback.data.split("_")[2])
+    data = db_bank.get_clients_list()
+    if callback.data.split("_")[2] == "yessbp":
+        await state.update_data(lk_sbp='sbp')
+        await callback.message.answer(
+            text="Выбран перевод по СБП. Выберите клиента:",
+            reply_markup=holders_inline_kb.lk_payments_client(data)
+        )
+    elif callback.data.split("_")[2] == "nosbp":
+        await state.update_data(lk_sbp='nosbp')
+        await callback.message.answer(
+            text="Выбран внутрибанковский перевод. Выберите клиента:",
+            reply_markup=holders_inline_kb.lk_payments_client(data)
+        )
+
+    await state.set_state(LKstates.lk_paymentfis_client)
+
+
+@router.callback_query(LKstates.lk_paymentfis_client, Text(startswith="pclient_"))
+async def lk_payment_client(callback: types.CallbackQuery,  state: FSMContext):
+    action = callback.data.split("_")
+    await state.update_data(lk_client_id=action[1], lk_client_name = action[2])
+
+    await callback.message.answer(
+        f"Введите сумму выплаты клиенту:"    
+    )
+
+    await state.set_state(LKstates.lk_paymentfis_sum)
+
+
+@router.message(LKstates.lk_paymentfis_sum)
+async def lk_paymentfis_sum(message: Message, state: FSMContext):
+    await state.update_data(lk_paymentfis_sum=message.text.lower())
+    print(message.text.format())
+    tx = await state.get_data()
+    lk = Wallet(*db_bank.get_lk_wallet(tx['lk_wal_id'])) 
+    
+    if tx['lk_sbp'] == 'nosbp':
+        #await state.update_data(lk_transferfis_bank_id=lk.bank_id)
+        await message.answer(
+            f"{tx['lk_from_holder_name']}\nВнутренний перевод клиенту на сумму: {tx['lk_paymentfis_sum']}.\nВы подтверждаете перевод?",
+            reply_markup=holders_inline_kb.lk_transferfis_confirm()
+        )
+    elif tx['lk_sbp'] == 'sbp':
+        await message.answer(
+            f"{tx['lk_from_holder_name']}\nПеревод по СБП клиенту на сумму: {tx['lk_paymentfis_sum']}.\nВы подтверждаете перевод?",
+            reply_markup=holders_inline_kb.lk_transferfis_confirm()
+        )
+    await state.set_state(LKstates.lk_paymentfis_confirm)
+
+########
+@router.callback_query(LKstates.lk_paymentfis_confirm, Text(startswith="lk_transferfis_confirm_"))
+async def lk_paymentfis_result(callback: types.CallbackQuery,  state: FSMContext):
+    action = callback.data.split("_")
+    acc = action[3]
+    tx = await state.get_data()
+    holder = tx['lk_holder_id']
+    name = tx['lk_from_holder_name']
+
+    if acc == "yes":
+        tranfer_type = f"payment_{tx['lk_sbp']}"
+        print(tx['lk_client_name'], tx['lk_from_holder_name'], tx['lk_wal_bank'], tx['lk_paymentfis_sum'], tx['lk_client_id'], tx['lk_wal_id'],  tranfer_type)
+        db_bank.add_new_payment(tx['lk_client_name'], tx['lk_from_holder_name'], tx['lk_wal_bank'], tx['lk_paymentfis_sum'], tx['lk_client_id'], tx['lk_wal_id'],  tranfer_type)
+        await callback.message.answer(
+            f"Перевод исполнен успешно! Возврат в кошелек."
+        )  
+    elif acc == "exit":
+        await callback.message.answer(
+            f"Перевод отменен! Возврат в кошелек."
+        )
+    await state.clear()
+    await state.set_state(LKstates.lk_choose_wallet)
+    await state.update_data(lk_holder_id=holder)
+    await state.update_data(lk_from_holder_name=name)
+    await look_wallet(callback, state, f"wallet_FIS_{tx['lk_wal_id']}")
+
+
 @router.callback_query(LKstates.lk_remitance, Text(startswith="wallet_FIS_"))
 async def lk_transfer_fis_wallet(callback: types.CallbackQuery,  state: FSMContext):
     action = callback.data.split("_")
@@ -164,7 +368,7 @@ async def lk_transfer_result(callback: types.CallbackQuery,  state: FSMContext):
     name = tx['lk_from_holder_name']
 
     if acc == "confirmation":
-        db_bank.add_new_transfer(tx['lk_wal_id'], tx['lk_fis_id'], tx['lk_transfer_sum'])
+        db_bank.add_new_transfer(tx['lk_wal_id'], tx['lk_fis_id'], tx['lk_transfer_sum'], 'transfer')
         await callback.message.answer(
             f"Перевод исполнен успешно! Возврат в кошелек."
         )  
@@ -439,16 +643,41 @@ async def lk_check_enter_sum(message: Message, state: FSMContext):
     await state.update_data(lk_check_sum=message.text.lower())
     print(message.text.format())
     tx = await state.get_data()
-    client = db_bank.get_client_info(tx['lk_client_id'])
+    client = db_bank.get_client_info(tx['lk_check_client'])
+    print(client[0][1])
     wal = Wallet(*db_bank.get_lk_wallet(tx["lk_wal_id"]))
-    ############################################
     
     await message.answer(
-        f"По умолчанию, процент банка устанволен 1%. Хотите изменить?:", reply_markup=holders_inline_kb.choose_transit_tariff()
+        f"Вы оплачиваете c {wal.holder_name} {wal.bank} счет на сумму: {tx['lk_check_sum']} \nв пользу клиента {client[0][1]}.\nВсе верно?", reply_markup=holders_inline_kb.lk_check_confirm()
     )
-    await state.set_state(LKstates.lk_transit_tariff)
+    await state.update_data(lk_check_client_name=client[0][1])
+    await state.set_state(LKstates.lk_check_confirm)
 
 
+@router.callback_query(LKstates.lk_check_confirm, Text(startswith="lk_check_confirm"))
+async def lk_check_result(callback: types.CallbackQuery,  state: FSMContext):
+    action = callback.data.split("_")
+    acc = action[3]
+    tx = await state.get_data()
+    lk = Wallet(*db_bank.get_lk_wallet(tx['lk_wal_id'])) 
+    hold_id = tx['lk_holder_id']
+    #name = tx['lk_from_holder_name']
+
+    if acc == "yes":
+        db_bank.add_new_payment(tx['lk_check_client_name'], lk.holder_name, lk.bank, tx['lk_check_sum'], tx['lk_check_client'], lk.id, "check" )
+        await callback.message.answer(
+            f"Оплата счета добавлена успешно! Возврат в кошелек."
+        )  
+    elif acc == "exit":
+        await callback.message.answer(
+            f"Оплата счета отменена! Возврат в кошелек."
+        )
+    await state.clear()
+    await state.set_state(LKstates.lk_choose_wallet)
+    await state.update_data(lk_holder_id=hold_id)
+    await state.update_data(lk_wal_id=lk.id)
+    await state.update_data(lk_from_holder_name=lk.holder_name)
+    await look_wallet(callback, state, f"wallet_{tx['lk_type']}_{tx['lk_wal_id']}")
 
 
 

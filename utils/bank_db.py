@@ -72,6 +72,27 @@ class DatabaseManagerBank(object):
             self.conn.close()
 
 
+    def get_lk_wallet_HB(self, id, bank):
+        try:
+            cur = self.conn.cursor()
+            stmt = f'SELECT * FROM wallets WHERE user_id= {id} AND bank_id = {bank}'
+            cur.execute(stmt) 
+            return cur.fetchall()[0]
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE get_lk_wallet", e)
+            self.conn.close()
+
+
+    def get_wallets_from_bank(self, bank):
+        try:
+            cur = self.conn.cursor()
+            stmt = f'SELECT * FROM wallets WHERE bank_id = {bank}'
+            cur.execute(stmt) 
+            return cur.fetchall()
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE get_lk_wallet", e)
+            self.conn.close()
+
     def get_clients_list(self,):
         try:
             cur = self.conn.cursor()
@@ -159,7 +180,25 @@ class DatabaseManagerBank(object):
             return 1
 
 
-    def add_new_transfer(self, from_id, to_id, sum):
+    def add_new_transfer(self, from_id, to_id, sum, type):
+        try:
+            date = datetime.date.today()
+            date_string = date.strftime("%d.%m.%y")
+            cur = self.conn.cursor()
+            stmt2 = f"UPDATE wallets SET balance = balance - {sum} WHERE id = {from_id}"
+            cur.execute(stmt2)
+            stmt3 = f"UPDATE wallets SET balance = balance + {sum} WHERE id = {to_id}"
+            cur.execute(stmt3)
+            stmt4 = f'INSERT INTO transactions(date, type, sender, sum_out, sum_in, recipient) VALUES ("{date_string}", "{type}", "{from_id}", "{sum}", "{sum}","{to_id}")'
+            self.conn.execute(stmt4)
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE add_transfer", e)
+            self.conn.close()
+        else:
+            self.conn.commit()
+
+
+    """def add_new_transferfis(self, from_id, to_id, sum):
         try:
             date = datetime.date.today()
             date_string = date.strftime("%d.%m.%y")
@@ -174,7 +213,7 @@ class DatabaseManagerBank(object):
             print("ERROR DATABASE add_transfer", e)
             self.conn.close()
         else:
-            self.conn.commit()
+            self.conn.commit()"""
 
 
     def add_new_cash_task(self, date, type, holder_name, bank_name, sum, wallet_id, bank_id):
@@ -205,6 +244,26 @@ class DatabaseManagerBank(object):
             self.conn.commit()
 
 
+    def add_new_payment(self, client_name, holder_name, bank_name, sum, client_id, wallet_id, type ):
+        try:
+            date = datetime.date.today()
+            date_string = date.strftime("%d.%m.%y")
+            cur = self.conn.cursor()
+            stmt = f"UPDATE clients SET balance = balance + {sum} WHERE id = {client_id}"
+            cur.execute(stmt)
+            stmt2 = f"UPDATE wallets SET balance = balance - {sum} WHERE id = {wallet_id}"
+            cur.execute(stmt2)
+            stmt4 = f'INSERT INTO payments (date,client_name, holder_name, bank_name, sum, client_id, wallet_id) VALUES ("{date_string}", "{client_name}","{holder_name}","{bank_name}", "{sum}","{client_id}","{wallet_id}")'
+            self.conn.execute(stmt4)
+            stmt5 = f'INSERT INTO transactions(date, type, sender, sum_out, sum_in, recipient) VALUES ("{date_string}", "{type}", "{wallet_id}", "{sum}", "{sum}","{client_id}")'
+            self.conn.execute(stmt5)
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE add_payment", e)
+            self.conn.close()
+        else:
+            self.conn.commit()
+
+
     def get_ip_holders(self,):
         try:
                 cur = self.conn.cursor()
@@ -217,6 +276,8 @@ class DatabaseManagerBank(object):
 
 
 
+
+"""
 
 
     def new_wallet(self, id, number, token):
@@ -239,7 +300,7 @@ class DatabaseManagerBank(object):
             self.conn.close()
         
 
-    """def get_number(self,id):
+    def get_number(self,id):
         stmt = f'SELECT number FROM user WHERE id = {id}'
         cur = self.conn.cursor()
         cur.execute(stmt)
