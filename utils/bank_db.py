@@ -124,6 +124,27 @@ class DatabaseManagerBank(object):
             print("ERROR DATABASE get_banks_list", e)
             self.conn.close()
 
+
+    def get_pp_list(self):
+        try:
+            cur = self.conn.cursor()
+            stmt = f'SELECT * FROM orders'
+            cur.execute(stmt) 
+            return cur.fetchall()
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE get_banks_list", e)
+            self.conn.close()
+
+
+    def get_pp_info_id(self,id):
+        try:
+            cur = self.conn.cursor()
+            stmt = f'SELECT * FROM orders WHERE id = {id}'
+            cur.execute(stmt) 
+            return cur.fetchall()[0]
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE get_banks_list", e)
+            self.conn.close()
     
     def get_full_pp_info(self, client_id, bank_id, holder_id):
         try:
@@ -143,7 +164,7 @@ class DatabaseManagerBank(object):
             self.conn.close()
 
 
-    def add_new_order(self, o, sum_client, sum_holder, type):
+    def add_new_order(self, o, sum_client, sum_holder, type, status):
         try:
             date = datetime.date.today()
             date_string = date.strftime("%d.%m.%y")
@@ -274,8 +295,27 @@ class DatabaseManagerBank(object):
             print("ERROR DATABASE new_user", e)
             self.conn.close()
 
+    def update_order_status(self,id,status):
+        try:
+            cur = self.conn.cursor()
+            stmt2 = f"UPDATE orders SET status = '{status}' WHERE id = {id}"
+            cur.execute(stmt2)
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE update_order_status", e)
+            self.conn.close()
+        else:
+            self.conn.commit()
 
 
+    def get_cash_list(self, status):
+        try:
+            cur = self.conn.cursor()
+            stmt = f"SELECT * FROM withdrawings WHERE status = 'task' "
+            cur.execute(stmt) 
+            return cur.fetchall()
+        except (lite.OperationalError, lite.ProgrammingError) as e:
+            print("ERROR DATABASE get_banks_list", e)
+            self.conn.close()
 
 """
 

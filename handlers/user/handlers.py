@@ -7,7 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from loader import db_bank
 from utils.user_cls import User
-from keyboards.inline.user_inline import holders_inline_kb, pp_inline_kb
+from keyboards.inline.user_inline import holders_inline_kb, pp_inline_kb, cash_inline_kb
 from keyboards.default import main_kb
 
 
@@ -60,7 +60,7 @@ async def orders(message: Message):
 async def orders(message: Message):
 
     await message.answer(
-        "Выберите действие: ",reply_markup=pp_inline_kb.get_pp_kb()       
+        "Выберите действие: ",reply_markup=cash_inline_kb.get_cash_kb()       
     )
 
 

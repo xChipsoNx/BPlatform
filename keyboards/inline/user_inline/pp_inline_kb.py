@@ -14,6 +14,7 @@ def get_pp_kb():
     return keyboard
 
 
+
 def newPP_choose_date():
     builder = InlineKeyboardBuilder()
     #d = 0
@@ -109,4 +110,36 @@ def choose_add_tariff():
 def choose_next_new_order():
     builder = InlineKeyboardBuilder()
     builder.row(types.InlineKeyboardButton(text=f"Завершить", callback_data=f"pp_exit"), types.InlineKeyboardButton(text=f"Добавить еще ПП", callback_data=f"pp_new"))
+    return builder.as_markup()
+
+
+def show_pp_list(data,page):
+    builder = InlineKeyboardBuilder()
+
+    data.reverse()
+    print(data)
+    for order in data[page*7:(page+1)*7]:
+        call = f"PP_order_{order[0]}"
+        print(call)
+        payed = '❌' if order[17] == 'new' else '💸' if order[17] == 'tax_payed' else '✅'
+        text = f"{payed}{order[1][:-3]} {order[3]} {order[4][:-3]} {order[5]} = {order[6]}"
+        builder.row(types.InlineKeyboardButton(
+            text=text,
+            callback_data=f"{call}")
+            
+        )
+    if page > 0:
+        builder.row(types.InlineKeyboardButton(text=f"<-",callback_data=f"PP_order_page_{page-1}"),
+                    types.InlineKeyboardButton(text=f"->",callback_data=f"PP_order_page_{page+1}"))
+    else:
+            builder.row(types.InlineKeyboardButton(text=f"->",callback_data=f"PP_order_page_{page+1}"))
+
+    return builder.as_markup()
+
+
+def pp_actions():
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text=f"Назад", callback_data=f"PP_order_page_0"), 
+                types.InlineKeyboardButton(text=f"Оплата налога", callback_data=f"PP_order_tax"))
+    #builder.row(types.InlineKeyboardButton(text=f"Оставить 1%", callback_data=f"PP_addtariff_no"))
     return builder.as_markup()
