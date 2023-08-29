@@ -164,7 +164,7 @@ class DatabaseManagerBank(object):
             self.conn.close()
 
 
-    def add_new_order(self, o, sum_client, sum_holder, type, status):
+    def add_new_order(self, o, sum_client, sum_holder, type):
         try:
             date = datetime.date.today()
             date_string = date.strftime("%d.%m.%y")
