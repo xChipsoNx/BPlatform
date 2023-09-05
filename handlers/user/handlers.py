@@ -9,7 +9,7 @@ from loader import db_bank
 from utils.user_cls import User
 from keyboards.inline.user_inline import holders_inline_kb, pp_inline_kb, cash_inline_kb
 from keyboards.default import main_kb
-
+from states.states import LKstates
 
 
 router = Router()  # [1]
@@ -32,20 +32,21 @@ async def cmd_cancel(message: Message, state: FSMContext):
     await main_kb.cancel_kb(message, state)
 
 
-@router.message(Text("ФИЗ"))
-async def fis_holders(message: Message):
-    data = db_bank.get_name_holders("'FIS'")
+@router.message(Text("Кабинеты"))
+async def fis_holders(message: Message, state:FSMContext):
     await message.answer(
-        "Выберите держателя физ из списка:", reply_markup=holders_inline_kb.holders_inline(data,'FIS')       
+        "Выберите действие из списка:", 
+        reply_markup=holders_inline_kb.holders_menu()   
     )
+    await state.set_state(LKstates.lk_menu)
 
-
-@router.message(Text("ИП"))
+@router.message(Text("Настройки"))
 async def ip_holders(message: Message):
-    data = db_bank.get_name_holders("'IP'")
+    pass
+    """data = db_bank.get_name_holders("'IP'")
     await message.answer(
         "Выберите держателя ИП из списка", reply_markup=holders_inline_kb.holders_inline(data,'IP')      
-    )
+    )"""
 
 
 @router.message(Text("ПП"))

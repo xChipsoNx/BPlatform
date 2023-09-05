@@ -8,52 +8,10 @@ from keyboards.inline.user_inline import holders_inline_kb
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 import datetime, math
-
+from states.states import LKstates 
 router = Router()  
 
-class LKstates(StatesGroup):
-    lk_remitance = State()
-    lk_remitance_sum = State()
-    lk_confirmation_remitance = State()
-
-    lk_cash = State()
-    lk_cash_sum = State()
-    lk_confirmation_cash = State()
-
-    lk_check = State()
-    lk_check_sum = State()
-    lk_check_confirm = State()
-
-    lk_pushchases = State()
-    lk_pushchases_sum = State()
-    lk_confirmation_pushchases = State()
-
-    lk_actions = State()
-    lk_choose_holder = State()
-    lk_choose_wallet = State()
-
-    lk_transit = State()
-    lk_transit_choose_wallet = State()
-    lk_transit_sum = State()
-    lk_transit_tariff = State()
-    lk_transit_add_tariff = State()
-    lk_transit_result = State()
-    lk_transit_confirm = State()
-
-    lk_transferfis_sbp = State()
-    lk_transferfis_holder = State()
-    lk_transferfis_bank = State()
-    lk_transferfis_sum = State()
-    lk_transferfis_confirm = State()
-
-    lk_paymentfis_sbp = State()
-    lk_paymentfis_client = State()
-    lk_paymentfis_sum = State()
-    lk_paymentfis_confirm = State()
-
      
-    
-
 async def look_wallet(callback, state, data):
     action = data.split("_")
     wal_id = action[2]
@@ -76,10 +34,39 @@ async def look_wallet(callback, state, data):
     await state.set_state(LKstates.lk_actions)
 
 
+async def back_to_wallet(callback, state, tx, type):
+    await state.clear()
+    await state.set_state(LKstates.lk_choose_wallet)
+    await state.update_data(lk_holder_id=tx['lk_holder_id'], lk_from_holder_id = tx['lk_from_holder_name'],lk_wal_id=tx['lk_wal_id'])
+    await look_wallet(callback, state, f"wallet_{type}_{tx['lk_wal_id']}")
+
+
 @router.callback_query(LKstates.lk_choose_wallet, Text(startswith="wallet_"))
 async def lk_menu(callback: types.CallbackQuery,  state: FSMContext):
     await look_wallet(callback, state, callback.data)
 
+
+@router.callback_query(LKstates.lk_menu, Text(startswith="lk_menu_"))
+async def holders_menu(callback: types.CallbackQuery, state: FSMContext):
+    action = callback.data.split("_")
+    
+    await callback.message.delete()
+    await callback.answer()
+    if action[2] == 'fis':
+        data = db_bank.get_name_holders("'FIS'")
+        await callback.message.answer(
+            "Выберите держателя ФИЗ из списка", reply_markup=holders_inline_kb.holders_inline(data,'FIS')
+        )
+        await state.set_state(LKstates.lk_choose_holders)
+    elif action[2] == 'ip':
+        data = db_bank.get_name_holders("'IP'")
+        await callback.message.answer(
+            "Выберите держателя ИП из списка", reply_markup=holders_inline_kb.holders_inline(data,'IP')
+        )
+        await state.set_state(LKstates.lk_choose_holders)
+    elif action[2] == 'top':
+        pass   
+    
 
 
 @router.callback_query(LKstates.lk_actions, Text(startswith="lk_"))
@@ -152,6 +139,7 @@ async def lk_actions(callback: types.CallbackQuery, state: FSMContext):
             )
             await state.set_state(LKstates.lk_transit)
 
+#############
 
 @router.callback_query(LKstates.lk_transferfis_sbp, Text(startswith="lk_transferfis_"))
 async def lk_transferfis_sbp(callback: types.CallbackQuery, state: FSMContext):
@@ -230,8 +218,7 @@ async def lk_transferfis_result(callback: types.CallbackQuery,  state: FSMContex
     action = callback.data.split("_")
     acc = action[3]
     tx = await state.get_data()
-    holder = tx['lk_holder_id']
-    name = tx['lk_from_holder_name']
+    
 
     if acc == "yes":
         tranfer_type = f"transfer_{tx['lk_transferfis_sbp']}"
@@ -243,12 +230,15 @@ async def lk_transferfis_result(callback: types.CallbackQuery,  state: FSMContex
         await callback.message.answer(
             f"Перевод отменен! Возврат в кошелек."
         )
-    await state.clear()
+
+    await back_to_wallet(callback, state,tx, 'FIS')
+    """await state.clear()
     await state.set_state(LKstates.lk_choose_wallet)
     await state.update_data(lk_holder_id=holder)
     await state.update_data(lk_from_holder_name=name)
-    await look_wallet(callback, state, f"wallet_FIS_{tx['lk_wal_id']}")
+    await look_wallet(callback, state, f"wallet_FIS_{tx['lk_wal_id']}")"""
 
+############
 
 @router.callback_query(LKstates.lk_paymentfis_sbp, Text(startswith="lk_paymentfis_"))
 async def lk_paymentfis_sbp(callback: types.CallbackQuery, state: FSMContext):
@@ -322,12 +312,15 @@ async def lk_paymentfis_result(callback: types.CallbackQuery,  state: FSMContext
         await callback.message.answer(
             f"Перевод отменен! Возврат в кошелек."
         )
-    await state.clear()
+
+    await back_to_wallet(callback, state,tx, 'FIS')
+    """await state.clear()
     await state.set_state(LKstates.lk_choose_wallet)
     await state.update_data(lk_holder_id=holder)
     await state.update_data(lk_from_holder_name=name)
-    await look_wallet(callback, state, f"wallet_FIS_{tx['lk_wal_id']}")
+    await look_wallet(callback, state, f"wallet_FIS_{tx['lk_wal_id']}")"""
 
+##############
 
 @router.callback_query(LKstates.lk_remitance, Text(startswith="wallet_FIS_"))
 async def lk_transfer_fis_wallet(callback: types.CallbackQuery,  state: FSMContext):
@@ -344,7 +337,7 @@ async def lk_transfer_fis_wallet(callback: types.CallbackQuery,  state: FSMConte
 
     await state.set_state(LKstates.lk_remitance_sum)
 
-###
+
 @router.message(LKstates.lk_remitance_sum)
 async def lk_confirmation_remitance(message: Message, state: FSMContext):
     await state.update_data(lk_transfer_sum=message.text.lower())
@@ -376,13 +369,16 @@ async def lk_transfer_result(callback: types.CallbackQuery,  state: FSMContext):
         await callback.message.answer(
             f"Перевод отменен! Возврат в кошелек."
         )
-    await state.clear()
+
+    await back_to_wallet(callback, state,tx,'IP')
+
+    """await state.clear()
     await state.set_state(LKstates.lk_choose_wallet)
     await state.update_data(lk_holder_id=holder)
     await state.update_data(lk_from_holder_name=name)
-    await look_wallet(callback, state, f"wallet_IP_{tx['lk_wal_id']}")
+    await look_wallet(callback, state, f"wallet_IP_{tx['lk_wal_id']}")"""
     
-
+#################
 
 
 @router.callback_query(LKstates.lk_cash, Text(startswith="lk_cash_date_"))
@@ -419,7 +415,6 @@ async def lk_cash_result(callback: types.CallbackQuery,  state: FSMContext):
     acc = action[2]
     tx = await state.get_data()
     lk = Wallet(*db_bank.get_lk_wallet(tx['lk_wal_id'])) 
-    hold_id = tx['lk_holder_id']
     #name = tx['lk_from_holder_name']
 
     if acc == "confirmation":
@@ -431,12 +426,14 @@ async def lk_cash_result(callback: types.CallbackQuery,  state: FSMContext):
         await callback.message.answer(
             f"Задание на снятие отменен! Возврат в кошелек."
         )
-    await state.clear()
+
+    await back_to_wallet(callback, state,tx, tx['lk_type'])
+    '''await state.clear()
     await state.set_state(LKstates.lk_choose_wallet)
     await state.update_data(lk_holder_id=hold_id)
     await state.update_data(lk_wal_id=lk.id)
     await state.update_data(lk_from_holder_name=lk.holder_name)
-    await look_wallet(callback, state, f"wallet_{tx['lk_type']}_{tx['lk_wal_id']}")
+    await look_wallet(callback, state, f"wallet_{tx['lk_type']}_{tx['lk_wal_id']}")'''
 
 
 @router.message(LKstates.lk_pushchases_sum)
@@ -472,12 +469,10 @@ async def lk_cash_result(callback: types.CallbackQuery,  state: FSMContext):
             f"Покупка отменена! Возврат в кошелек."
         )
     await state.clear()
-    await state.set_state(LKstates.lk_choose_wallet)
-    await state.update_data(lk_wal_id=holder)
-    await state.update_data(lk_from_holder_name=name)
-    await state.update_data(lk_holder_id=hold_id)
-    await look_wallet(callback, state, f"wallet_{tx['lk_type']}_{tx['lk_wal_id']}")
+    await back_to_wallet(callback, state,tx, tx['lk_type'])
+    
 
+######
 
 @router.callback_query(LKstates.lk_transit,Text(startswith="holder_IP_"))
 async def get_transit_holders(callback: types.CallbackQuery, state: FSMContext):
@@ -617,14 +612,17 @@ async def lk_transit_write_new_order(callback: types.CallbackQuery, state: FSMCo
         await callback.message.answer(
             f"Запись пп транзита отменена! Возврат в кошелек."
         )
-    await state.clear()
+
+    await back_to_wallet(callback, state,tx,tx['lk_type'])
+    """await state.clear()
     await state.set_state(LKstates.lk_choose_wallet)
     await state.update_data(lk_wal_id=wal_id)
     await state.update_data(lk_from_holder_name=name)
     await state.update_data(lk_holder_id=hold_id)
-    await look_wallet(callback, state, f"wallet_{tx['lk_type']}_{tx['lk_wal_id']}")
+    await look_wallet(callback, state, f"wallet_{tx['lk_type']}_{tx['lk_wal_id']}")"""
     #ans = db_bank.add_new_order(order.get_list(), client_sum,holder_sum)
     
+############
 
 @router.callback_query(LKstates.lk_check, Text(startswith="lk_check_client_"))
 async def lk_check_choose_client(callback: types.CallbackQuery,  state: FSMContext):
@@ -672,12 +670,13 @@ async def lk_check_result(callback: types.CallbackQuery,  state: FSMContext):
         await callback.message.answer(
             f"Оплата счета отменена! Возврат в кошелек."
         )
-    await state.clear()
+    await back_to_wallet(callback, state,tx,tx['lk_type'])    
+    """await state.clear()
     await state.set_state(LKstates.lk_choose_wallet)
     await state.update_data(lk_holder_id=hold_id)
     await state.update_data(lk_wal_id=lk.id)
     await state.update_data(lk_from_holder_name=lk.holder_name)
-    await look_wallet(callback, state, f"wallet_{tx['lk_type']}_{tx['lk_wal_id']}")
+    await look_wallet(callback, state, f"wallet_{tx['lk_type']}_{tx['lk_wal_id']}")"""
 
 
 

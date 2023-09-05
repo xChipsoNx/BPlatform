@@ -12,11 +12,11 @@ from aiogram import F, types, Router
 async def start_menu(msg):
     kb = [
         [
-            types.KeyboardButton(text="ФИЗ"),
-            types.KeyboardButton(text="ИП")
+            types.KeyboardButton(text="ПП"),
+            types.KeyboardButton(text="Кабинеты")
         ],
         [
-            types.KeyboardButton(text="ПП"),
+            types.KeyboardButton(text="Настройки"),
             types.KeyboardButton(text="Снятия")
         ]
     ]

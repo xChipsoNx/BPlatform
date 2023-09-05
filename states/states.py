@@ -4,63 +4,48 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, ReplyKeyboardRemove
 
-from keyboards.simple_row import make_row_keyboard
-
-router = Router()
-
-# Эти значения далее будут подставляться в итоговый текст, отсюда
-# такая на первый взгляд странная форма прилагательных
-available_food_names = ["Суши", "Спагетти", "Хачапури"]
-available_food_sizes = ["Маленькую", "Среднюю", "Большую"]
 
 
-class OrderFood(StatesGroup):
-    choosing_food_name = State()
-    choosing_food_size = State()
+class LKstates(StatesGroup):
+    lk_remitance = State()
+    lk_remitance_sum = State()
+    lk_confirmation_remitance = State()
 
+    lk_cash = State()
+    lk_cash_sum = State()
+    lk_confirmation_cash = State()
 
-@router.message(Command("food"))
-async def cmd_food(message: Message, state: FSMContext):
-    await message.answer(
-        text="Выберите блюдо:",
-        reply_markup=make_row_keyboard(available_food_names)
-    )
-    # Устанавливаем пользователю состояние "выбирает название"
-    await state.set_state(OrderFood.choosing_food_name)
+    lk_check = State()
+    lk_check_sum = State()
+    lk_check_confirm = State()
 
-# Этап выбора блюда #
+    lk_pushchases = State()
+    lk_pushchases_sum = State()
+    lk_confirmation_pushchases = State()
 
+    lk_actions = State()
+    lk_choose_holder = State()
+    lk_choose_wallet = State()
 
-@router.message(OrderFood.choosing_food_name, F.text.in_(available_food_names))
-async def food_chosen(message: Message, state: FSMContext):
-    await state.update_data(chosen_food=message.text.lower())
-    await message.answer(
-        text="Спасибо. Теперь, пожалуйста, выберите размер порции:",
-        reply_markup=make_row_keyboard(available_food_sizes)
-    )
-    await state.set_state(OrderFood.choosing_food_size)
+    lk_transit = State()
+    lk_transit_choose_wallet = State()
+    lk_transit_sum = State()
+    lk_transit_tariff = State()
+    lk_transit_add_tariff = State()
+    lk_transit_result = State()
+    lk_transit_confirm = State()
 
+    lk_transferfis_sbp = State()
+    lk_transferfis_holder = State()
+    lk_transferfis_bank = State()
+    lk_transferfis_sum = State()
+    lk_transferfis_confirm = State()
 
-@router.message(OrderFood.choosing_food_name)
-async def food_chosen_incorrectly(message: Message):
-    await message.answer(
-        text="Я не знаю такого блюда.\n\n"
-             "Пожалуйста, выберите одно из названий из списка ниже:",
-        reply_markup=make_row_keyboard(available_food_names)
-    )
+    lk_paymentfis_sbp = State()
+    lk_paymentfis_client = State()
+    lk_paymentfis_sum = State()
+    lk_paymentfis_confirm = State()
 
-# Этап выбора размера порции и отображение сводной информации #
-
-
-@router.message(OrderFood.choosing_food_size, F.text.in_(available_food_sizes))
-async def food_size_chosen(message: Message, state: FSMContext):
-    user_data = await state.get_data()
-    await message.answer(
-        text=f"Вы выбрали {message.text.lower()} порцию {user_data['chosen_food']}.\n"
-             f"Попробуйте теперь заказать напитки: /drinks",
-        reply_markup=ReplyKeyboardRemove()
-    )
-    # Сброс состояния и сохранённых данных у пользователя
-    await state.clear()
-
-
+    lk_menu = State()
+    lk_choose_holders = State()
+    lk_choose_banks = State()

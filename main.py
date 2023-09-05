@@ -10,7 +10,7 @@ async def main():
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
     )
-    loader.dp.include_routers( handlers.router, lk_handlers.router, pp_handlers.router, cash_handlers.router--)
+    loader.dp.include_routers( handlers.router, lk_handlers.router, pp_handlers.router, cash_handlers.router)
     await loader.bot.delete_webhook(drop_pending_updates=True)
     await loader.dp.start_polling(loader.bot, allowed_updates=loader.dp.resolve_used_update_types())
     

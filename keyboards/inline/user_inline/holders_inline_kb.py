@@ -6,17 +6,20 @@ import datetime
 def holders_inline(data, tp):
     builder = InlineKeyboardBuilder()
     for nameid in data:
-        if tp == 'FIS':
+        call = f"holder_{tp}_{nameid[1]}"
+
+        """if tp == 'FIS':
             call = f"holder_FIS_{nameid[1]}"
         elif tp == 'IP':
             call = f"holder_IP_{nameid[1]}"
-        print(call)
+        print(call)"""
         builder.row(types.InlineKeyboardButton(
             text=f"{nameid[0]}",
             callback_data=f"{call}")
-            
         )
         print(call)
+    #builder.row(types.InlineKeyboardButton(text=f"◀️ Назад", callback_data=f"lk_menu_back"))
+        
     return builder.as_markup()
 
 
@@ -231,4 +234,12 @@ def lk_payments_client(data):
         )
         print(client[1])
         
+    return builder.as_markup()
+
+
+def holders_menu():
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(text=f"Физические", callback_data=f"lk_menu_fis")) 
+    builder.row(types.InlineKeyboardButton(text=f"ИП", callback_data=f"lk_menu_ip"))
+    builder.row(types.InlineKeyboardButton(text=f"10 наибольших", callback_data=f"lk_menu_top"))
     return builder.as_markup()
